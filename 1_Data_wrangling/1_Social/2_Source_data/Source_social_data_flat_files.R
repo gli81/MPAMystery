@@ -1,79 +1,23 @@
-# 
-# code:  Source social data from flat files for all social MPA Mystery analysis
-# 
-# github: WWF-ConsEvidence/MPAMystery/1_Data_wrangling/1_Social/2_Source_data
-# --- Duplicate all code from MPAMystery repo folder to maintain sourcing functionality throughout scripts
-# 
-# author: Kelly Claborn, clabornkelly@gmail.com
-# created: May 2019
-# QAQC_modified by: Duong Le & David Gill  
-# modified: July 2020
-# 
-# 
-# ---- inputs ----
-#  1) Exported excel files from MPASocial in x_Flat_data_files/1_Social/Inputs/Master_database_exports (all endpoints, except look-up tables)
-# 
-# ---- outputs ----
-#  1) HHData data frame for all analyses on the BigFive & Middle15 variables 
-#      (used in technical reports and impact summaries)
-#  2) IndDemos data frame for all analyses on the BigFive & Middle15 variables
-#      (used in technical reports and impact summaries)
-#  3) Organization data frame for analyses on marine organization participation 
-#      (used in technical reports for Sunda Banda Seascape)
-# 
-# ---- code sections ----
-#  1) LOAD LIBRARIES AND DATA
-#  2) CLEAN & POST-CODE DATA
-#  3) OPTIONAL FILTERING BY SEASCAPE OR MPA
-# 
-# 
 
-# 
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#
-# ---- SECTION 1: LOAD LIBRARIES & DATA ----
-#
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# 
+###### SOURCE DATA FOR HETEROGENEITY ANALYSIS INCLUDING T7 DATA ######
 
-# ---- 1.1 Load libraries & data ----
+#### SECTIONS ####
 
-pacman::p_load(rio, reldist, Kendall, reshape2, ggplot2, grid, gridExtra, dplyr)
+## 1) CLEAN & POST-CODE DATA
+## 2) ADDRESS PECULIARITIES IN DATA
+## 3) SELECT DATA FOR BHS ONLY
 
-# Sourcing most recent files
-
-# Date in format YYYYMMDD (could be changed but we believe it makes most sense 
-# to avoid hyphens in file names and to have the date first so files get sorted chronologically)
-today.date <- gsub("-","",Sys.Date())
-
-# Files (with package rio)
-last.file <- function(dir.nam, nam){
-  import(paste0(dir.nam, last(sort(grep(nam, list.files(dir.nam), value=T, fixed=T)))), guess_max=50000)}
-
-# suppress messages for experimental new group_by() and summarise() functionality in dplyr
-options(dplyr.summarise.inform = FALSE)
-
-
-# ---- 1.2 Import data ----
-
-WELLBEING <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_household')
-DEMOGRAPHIC <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_demographic')
-SETTLEMENT <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_settlement')
-ORGANIZATION <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_marineorganizationmembership')
-NMORGANIZATION <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_nonmarineorganizationmembership')
-LTHREAT <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_localthreat')
-LSTEPS <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_localstep')
-MPA.LKP <- last.file(dir.nam='x_Flat_data_files/1_Social/Inputs/Master_database_exports/', nam='tbl_mpa')
 
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# ---- SECTION 2: CLEAN & POST-CODE DATA ----
+# ---- SECTION 1: CLEAN & POST-CODE DATA ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+source('Combining_T4_and_T7_20240208.R', local = T)
 
-# -- 2.1 Clean & post-code WELLBEING to create HHData for analysis ----
+# -- 1.1 Clean & post-code WELLBEING to create HHData for analysis ----
 
 HHData <-   WELLBEING %>%
   dplyr::transmute(HouseholdID = householdid, 
@@ -129,7 +73,7 @@ HHData <-   WELLBEING %>%
                    DVD = as.integer(ifelse(assetdvd>989,NA,assetdvd)),
                    Entertain = as.integer(ifelse(assetentertain<993,assetentertain*1,
                                                  ifelse(assetentertain==993,Radio+Stereo+CD+DVD,NA))),
-                  
+                   
                    CookingFuel = as.integer(ifelse(cookingfuel%in%c(1:6), cookingfuel, NA)),
                    CookingFuel.Biomass = as.integer(ifelse(cookingfuel==1|cookingfuel==2,0,
                                                            ifelse(cookingfuel==3|cookingfuel==4|cookingfuel==5|cookingfuel==6,1,NA))),
@@ -247,7 +191,7 @@ HHData <-   WELLBEING %>%
                 LessProductiveDaysFishing, PoorCatch, PoorCatchUnits, MoreProductiveDaysFishing, GoodCatch, GoodCatchUnits, PaternalEthnicity)
 
 
-# ---- 2.2 Clean & post-code DEMOGRAPHIC to create IndDemos for analysis ----
+# ---- 1.2 Clean & post-code DEMOGRAPHIC to create IndDemos for analysis ----
 
 IndDemos <- 
   DEMOGRAPHIC %>%
@@ -259,7 +203,8 @@ IndDemos <-
                    IndividualEducation = ifelse(individualeducation %in% c("995", "997", "998", "999"),NA,as.character(individualeducation)),
                    SchoolAge = ifelse((individualage>4 & individualage<19),1,ifelse(individualage>150 | is.na(individualage),NA,0)),
                    IndividualEnrolled = as.integer(ifelse(individualenrolled%in%c(0:1),individualenrolled,NA)),
-                   ChildEnrolled = ifelse((individualenrolled==1 & SchoolAge==1),1,ifelse((is.na(IndividualAge) | SchoolAge==0),NA,0)),
+                   #ChildEnrolled = ifelse((individualenrolled==1 & SchoolAge==1),1,ifelse((is.na(IndividualAge) | SchoolAge==0),NA,0)),
+                   ChildEnrolled = ifelse((individualenrolled==1 & SchoolAge==1),1,ifelse((individualenrolled==0 | SchoolAge==0),0,NA)),
                    DaysUnwell = ifelse(individualdaysunwell>32,NA,
                                        ifelse(individualdaysunwell%in%c(29:32),28,individualdaysunwell)),
                    IndividualUnwell = as.integer(ifelse(individualunwell%in%c(0:1),individualunwell,NA)),
@@ -268,7 +213,7 @@ IndDemos <-
   left_join(., HHData[,c("HouseholdID","MPAID","SettlementID")], by="HouseholdID")
 
 
-# ---- 2.3 Call, clean, & post-code ORGANIZATION to create Organization & NMOrganization (non-marine organization) for analysis ----
+# ---- 1.3 Call, clean, & post-code ORGANIZATION to create Organization & NMOrganization (non-marine organization) for analysis ----
 
 Organization <- 
   ORGANIZATION %>%
@@ -293,7 +238,7 @@ NMOrganization <-
   left_join(HHData[,c("HouseholdID","MPAID","SettlementID")], by="HouseholdID")
 
 
-# ---- 2.4 Add seascape column to SETTLEMENTS for analysis ----
+# ---- 1.4 Add seascape column to SETTLEMENTS for analysis ----
 
 Settlements <- 
   SETTLEMENT %>%
@@ -307,7 +252,7 @@ Settlements <-
                                             NA)))
 
 
-# ---- 2.5 Add monitoring year column to HHData for analysis ----
+# ---- 1.5 Add monitoring year column to HHData for analysis ----
 
 
 HHData$MonitoringYear <- factor(mapply(a=HHData$MPAID,
@@ -344,7 +289,7 @@ HHData$MonitoringYear <- factor(mapply(a=HHData$MPAID,
                                 ordered=T)
 
 
- # ---- 2.6 Create MPA.name table to define formal MPA names, in English and Bahasa, for plotting and automated R wrapper ----
+# ---- 1.6 Create MPA.name table to define formal MPA names, in English and Bahasa, for plotting and automated R wrapper ----
 
 MPA.name <- 
   MPA.LKP %>% 
@@ -364,15 +309,16 @@ MPA.name <-
 # 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# ---- SECTION 3: ADDRESS PECULIARITIES IN DATA ----
+# ---- SECTION 2: ADDRESS PECULIARITIES IN DATA ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
 
 
-# ---- 3.1 Remove observations from BHS & SBS that do not have post-baseline data ----
+# ---- 2.1 Remove observations from BHS & SBS that do not have post-baseline data ----
 
-HHData <- HHData[HHData$SettlementID!=84 &
+HHData <- HHData[HHData$SettlementID!=14 & # include settlement 14 because it was only surveyed at t0 and t2
+                   HHData$SettlementID!=84 &
                    HHData$SettlementID!=96 &
                    HHData$SettlementID!=97 &
                    HHData$SettlementID!=98 &
@@ -383,6 +329,7 @@ HHData <- HHData[HHData$SettlementID!=84 &
                    HHData$SettlementID!=131,]
 
 IndDemos <- IndDemos[!is.na(IndDemos$SettlementID) &
+                       IndDemos$SettlementID!=14 & # include settlement 14 because it was only surveyed at t0 and t2
                        IndDemos$SettlementID!=84 &
                        IndDemos$SettlementID!=96 &
                        IndDemos$SettlementID!=97 &
@@ -394,6 +341,7 @@ IndDemos <- IndDemos[!is.na(IndDemos$SettlementID) &
                        IndDemos$SettlementID!=131,]
 
 Settlements <- Settlements[!is.na(Settlements$SettlementID) &
+                             Settlements$SettlementID!=14 & # include settlement 14 because it was only surveyed at t0 and t2
                              Settlements$SettlementID!=84 &
                              Settlements$SettlementID!=96 &
                              Settlements$SettlementID!=97 &
@@ -406,6 +354,7 @@ Settlements <- Settlements[!is.na(Settlements$SettlementID) &
 Settlements$SettlementName <- as.character(Settlements$SettlementName)
 
 Organization <- Organization[!is.na(Organization$SettlementID) &
+                               Organization$SettlementID!=14 & # include settlement 14 because it was only surveyed at t0 and t2
                                Organization$SettlementID!=84 &
                                Organization$SettlementID!=96 &
                                Organization$SettlementID!=97 &
@@ -417,6 +366,7 @@ Organization <- Organization[!is.na(Organization$SettlementID) &
                                Organization$SettlementID!=131,]
 
 NMOrganization <- NMOrganization[!is.na(NMOrganization$SettlementID) &
+                                   NMOrganization$SettlementID!=14 & # include settlement 14 because it was only surveyed at t0 and t2
                                    NMOrganization$SettlementID!=84 &
                                    NMOrganization$SettlementID!=96 &
                                    NMOrganization$SettlementID!=97 &
@@ -429,92 +379,70 @@ NMOrganization <- NMOrganization[!is.na(NMOrganization$SettlementID) &
 
 # remove household from baseline that refused every question but material assets (no demographic info, etc.)
 
-HHData <- HHData[HHData$HouseholdID!=1347,]
-IndDemos <-IndDemos[IndDemos$HouseholdID!=1347,]
+HHData <- HHData[HHData$HouseholdID!=41347,]
+IndDemos <-IndDemos[IndDemos$HouseholdID!=41347,]
 
 
-# ---- 3.2 Re-code settlements in Kaimana MPA that changed designation after baseline year ----
+# ---- 2.2 Re-code settlements in Kaimana MPA that changed designation after baseline year ----
 
 Settlements$Treatment <- ifelse(Settlements$SettlementID==83 | Settlements$SettlementID==91 | Settlements$SettlementID==92,
                                 0,Settlements$Treatment)
 
 
-# ---- 3.3 Add dummy row of data for all settlements (in Bird's Head) that do not have baseline data ----
+# ---- 2.3 Add dummy row of data for all settlements (in Bird's Head) that do not have baseline data ----
 
-baseline.dummy.rows <- 
-  data.frame(HouseholdID=rep(NA,13),
-             MPAID=c(5,rep(2,9),rep(3,3)),
-             SettlementID=c(72,104:112,113:115),
-             InterviewYear=c(2012,rep(2010,9),rep(2012,3)),
-             as.data.frame(matrix(rep(NA,length(colnames(HHData[5:length(colnames(HHData))]))),
-                                  ncol=length(colnames(HHData[5:length(colnames(HHData))])),
-                                  nrow=13,
-                                  dimnames=list(NULL,colnames(HHData[5:length(colnames(HHData))]))))) %>%
-  mutate(RemoveFS="No",
-         RemoveMA="No",
-         RemoveMT="No",
-         RemovePA="No",
-         MonitoringYear="Baseline")
-
-
-HHData <- 
-  rbind.data.frame(HHData,
-                   baseline.dummy.rows)
+#baseline.dummy.rows <- 
+#  data.frame(HouseholdID=rep(NA,13),
+#             MPAID=c(5,rep(2,9),rep(3,3)),
+#             SettlementID=c(72,104:112,113:115),
+#             InterviewYear=c(2012,rep(2010,9),rep(2012,3)),
+#             as.data.frame(matrix(rep(NA,length(colnames(HHData[5:length(colnames(HHData))]))),
+#                                  ncol=length(colnames(HHData[5:length(colnames(HHData))])),
+#                                  nrow=13,
+#                                  dimnames=list(NULL,colnames(HHData[5:length(colnames(HHData))]))))) %>%
+#  mutate(RemoveFS="No",
+#         RemoveMA="No",
+#         RemoveMT="No",
+#         RemovePA="No",
+#         MonitoringYear="Baseline")
 
 
-# ---- 3.4 Join Settlements and HHData tables ----
+#HHData <- 
+#  rbind.data.frame(HHData,
+#                   baseline.dummy.rows)
+
+
+# ---- 2.4 Join Settlements and HHData tables ----
 
 HHData <- 
   left_join(HHData,Settlements,by=c("SettlementID","MPAID"))
 
+#rm(baseline.dummy.rows)
 
-# 
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+# ---- SECTION 3: SELECT DATA FOR BHS ONLY ----
+#
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#
-# ---- SECTION 4: FILTERING BY MPA ----
-#
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#
-
-# ---- 4.1 Filter by MPA ----
-
-# HHData <-
-#   HHData %>%
-#   filter(MPAID==MPA) %>%
-#   mutate(MonitoringYear=factor(MonitoringYear,
-#                                levels=unique(MonitoringYear),
-#                                ordered=T))
-# 
-# IndDemos <-
-#   left_join(IndDemos,HHData[,c("HouseholdID","Seascape")],by=c("HouseholdID")) %>%
-#   filter(MPAID==MPA)
-# 
-# Organization <-
-#   left_join(Organization,HHData[,c("HouseholdID","Seascape")],by="HouseholdID") %>%
-#   filter(MPAID==MPA)
-# 
-# Settlements <- 
-#   Settlements %>%
-#   filter(MPAID==MPA) %>%
-#   mutate(SettlementName=factor(SettlementName,
-#                                levels=unique(SettlementName)))
-# 
-# MPA.name <-
-#    MPA.name %>% 
-#    filter(MPAID==MPA)
-# 
-# LThreat_forexport <-
-#   left_join(LTHREAT[,c("household","localthreatid","localmarinethreat")],
-#             HHData[,c("HouseholdID","SettlementID","MPAID","MonitoringYear","InterviewYear","Treatment","PrimaryLivelihood","SecondaryLivelihood","TertiaryLivelihood")],
-#             by=c("household"="HouseholdID")) %>%
-#   rename(HouseholdID=household) %>%
-#   filter(MPAID==MPA) %>%
-#   dplyr::mutate(Check.NA=paste(PrimaryLivelihood,SecondaryLivelihood,TertiaryLivelihood,sep=""),
-#                 Fisher=ifelse(grepl("3",Check.NA),"Fisher",
-#                               ifelse(Check.NA=="NANANA",NA,"Not Fisher"))) %>%
-#   select(-Check.NA)
 
 
-# 
-rm(baseline.dummy.rows)
+HHData <- HHData %>% 
+  filter(MPAID%in%c(1:6))
+
+IndDemos <- IndDemos %>% 
+  filter(MPAID%in%c(1:6))
+
+Organization <- Organization %>% 
+  filter(MPAID%in%c(1:6))
+
+NMOrganization <- NMOrganization %>% 
+  filter(MPAID%in%c(1:6))
+
+Settlements <- Settlements %>% 
+  filter(MPAID%in%c(1:6))
+
+MPA.name <- MPA.name %>% 
+  filter(MPAID%in%c(1:6))
 

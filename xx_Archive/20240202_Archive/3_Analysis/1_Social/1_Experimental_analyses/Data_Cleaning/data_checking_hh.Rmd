@@ -1,0 +1,315 @@
+---
+title: "data_checking_household"
+output: html_notebook
+---
+
+```{r}
+
+pacman::p_load(rio, plyr, foreach, dplyr, openxlsx, chron, tidyverse, reshape, xlsx)
+```
+
+```{r}
+#load the household data
+household_tbl <-
+  import('***INSERT DATAFRAME LOCATION HERE ***)  %>%
+  filter(!is.na(householdid))
+#rename the column with typo in UNIPA dataset
+names(household_tbl)[names(household_tbl) == "assetsattellite"] <- "assetsatellite"
+#set column names in UNIPA to lower case
+colnames(household_tbl) <- tolower(colnames(household_tbl))
+#create skip codes list
+skipcodes <- c(990:999)
+```
+
+Data frame summarizing number of NAs in each column: 
+```{r}
+count_NA_hh <- sapply(household_tbl, function(x) sum(is.na(x)))
+count_NA_hh <- as.data.frame(count_NA_hh)
+```
+
+* RELIGION_CHOICES (variable name: `religion`)
+
+```{r}
+# Top section creating vectors of "legal" ranges for codes
+religion_codes <- c(1:7)
+# Bottom section that stores rows with invalid data
+religion_index <- filter(household_tbl, !religion%in%c(religion_codes,skipcodes)) %>% select(householdid, religion)
+# Option option 1
+print(paste0("Values out of range for religion for Household ID", religion_index$householdid))
+# Option option 2
+print(religion_index)
+```
+
+* LATITUDE_DEGREE_CHOICES (`latdeg`)
+
+```{r}
+latdeg_codes <- c(0:90)
+latdeg_index <- filter(household_tbl, !latdeg%in%c(latdeg_codes, skipcodes)) %>% select(householdid, latdeg)
+print(paste0("Values out of range for latitude degree for Household ID", latdeg_index$householdid))
+print(latdeg_index)
+```
+
+* LONGITUDE_DEGREE_CHOICES (`londeg`)
+
+```{r}
+londeg_codes <- c(0:180)
+londeg_index <- filter(household_tbl, !londeg%in%c(londeg_codes,skipcodes)) %>% select(householdid, londeg)
+print(paste0("Values out of range for longitude degree for Household ID", londeg_index$householdid))
+print(londeg_index)
+```
+
+* MINUTES_SECONDS_CHOICES (`latmin`, `latsec`, `lonmin`, `lonsec`)
+
+```{r}
+min_sec_codes <- c(0:60)
+
+# latitude minute index
+latmin_index <- filter(household_tbl, !latmin%in%c(min_sec_codes,skipcodes)) %>% select(householdid, latmin)
+print(paste0("Values out of range for latitude minute for Household ID", latmin_index$householdid))
+print(latmin_index)
+
+# latitude second index
+latsec_index <- filter(household_tbl, !latsec%in%c(min_sec_codes,skipcodes)) %>% select(householdid, latsec)
+print(paste0("Values out of range for latitude second for Household ID", latsec_index$householdid))
+print(latsec_index)
+
+# longitude minute index
+lonmin_index <- filter(household_tbl, !lonmin%in%c(min_sec_codes,skipcodes)) %>% select(householdid, lonmin)
+print(paste0("Values out of range for longitude minute for Household ID", lonmin_index$householdid))
+print(lonmin_index)
+
+# longitude second index
+lonsec_index <- filter(household_tbl, !lonsec%in%c(min_sec_codes,skipcodes)) %>% select(householdid, lonsec)
+print(paste0("Values out of range for longitue second for Household ID", lonsec_index$householdid))
+print(lonsec_index)
+```
+
+* SECONDS_FRACTION_CHOICES (`latfrac`, `lonfrac`)
+
+```{r}
+sec_frac_codes <- c(0:9)
+
+latfrac_index <- filter(household_tbl, !latfrac%in%c(sec_frac_codes,skipcodes)) %>% select(householdid, latfrac)
+print(paste0("Values out of range for latitude fraction for Household ID", latfrac_index$householdid))
+print(latfrac_index)
+
+lonfrac_index <- filter(household_tbl, !lonfrac%in%c(sec_frac_codes,skipcodes)) %>% select(householdid, lonfrac)
+print(paste0("Values out of range for longitude fraction for Household ID", lonfrac_index$householdid))
+print(lonfrac_index)
+```
+
+* LATITUDE_SPHERE_CHOICES (`latsphere`)
+
+```{r}
+lat_sphere_codes <- c("N|n|North|north|S|s|South|south|990|991|992|993|995|996|997|998|999")
+lat_sphere_index <- 
+  filter(household_tbl, !grepl(lat_sphere_codes, latsphere)) %>%
+  select(householdid, latsphere)
+
+print(paste0("Values in incorrect format for latitude sphere for Household ID", lat_sphere_index$householdid))
+print(lat_sphere_index)
+```
+
+* LONGITUDE_SPHERE_CHOICES (`lonsphere`)
+
+```{r}
+lon_sphere_codes <- c("E|e|East|east|W|w|West|west|990|991|992|993|995|996|997|998|999")
+lon_sphere_index <- 
+  filter(household_tbl, !grepl(lon_sphere_codes,lonsphere)) %>% 
+  select(householdid, lonsphere)
+print(paste0("Values in incorrect format for longitude sphere for Household ID", lon_sphere_index$householdid))
+print(lon_sphere_index)
+```
+
+* DAY_OF_MONTH_CHOICES (`interviewday`)
+
+```{r}
+day_codes <- c(1:31)
+day_index <- filter(household_tbl, !interviewday%in%c(day_codes, skipcodes)) %>% select(householdid, interviewday)
+print(paste0("Values out of range for interview day for Household ID", day_index$householdid))
+print(day_index)
+```
+
+* MONTH_CHOICES (`interviewmonth`)
+
+```{r}
+month_codes <- c(1:12)
+month_index <- filter(household_tbl, !interviewmonth%in%c(month_codes, skipcodes)) %>% select(householdid, interviewmonth)
+print(paste0("Values out of range for interview day month for Household ID", month_index$householdid))
+print(month_index)
+```
+
+* YEAR_CHOICES (`interviewyear`)
+
+```{r}
+year_codes <- c(2000:2050)
+year_index <- filter(household_tbl, !interviewyear%in%c(year_codes)) %>% select(householdid, interviewyear)
+print(paste0("Values out of range for interview year for Household ID", year_index$householdid))
+print(year_index)
+```
+
+* ECONOMIC_STATUS_TREND_CHOICES (`economicstatustrend`)
+
+```{r}
+econ_trend_codes <- c(1:5)
+econ_trend_index <- 
+  filter(household_tbl, !economicstatustrend%in%c(econ_trend_codes, skipcodes)) %>%
+           select(householdid, economicstatustrend)
+print(paste0("Values out of range for economic status strend for Household ID", econ_trend_index$householdid))
+print(econ_trend_index)
+```
+
+* COOKING_FUEL_CHOICES (`cookingfuel`)
+
+```{r}
+cooking_fuel_codes <- c(1:5)
+cooking_fuel_index <- 
+  filter(household_tbl, !cookingfuel%in%c(cooking_fuel_codes, skipcodes)) %>%
+           select(householdid, cookingfuel)
+print(paste0("Values out of range for cooking fuel for Household ID", cooking_fuel_index$householdid))
+print(cooking_fuel_index)
+```
+
+* YES_NO_CHOICES (`householddeath`, `householdbirth`, `fsadultskip`, `fseatless`, `fshungry`, `fschildportion`, `fschildskip`, `rightsaccess`, `rightsharvest`, `rightsmanage`, `rightsexclude`, `rightstransfer`, `marinegroup`, `othergroup`, `votedistrict`, `votenational`)
+
+```{r}
+yes_no_codes <- c(0:1)
+yes_no_var_index_hh <- 
+  filter(household_tbl, !householddeath%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, householddeath)
+  filter(household_tbl, !householdbirth%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, householdbirth)
+  filter(household_tbl, !fsadultskip%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, fsadultskip) 
+  filter(household_tbl, !fseatless%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, fseatless) 
+  filter(household_tbl, !fshungry%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, fshungry) 
+  filter(household_tbl, !fschildportion%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, fschildportion) 
+  filter(household_tbl, !fschildskip%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, fschildskip) 
+  filter(household_tbl, !rightsaccess%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, rightsaccess) 
+  filter(household_tbl, !rightsharvest%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, rightsharvest) 
+  filter(household_tbl, !rightsmanage%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, rightsmanage) 
+  filter(household_tbl, !rightsexclude%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, rightsexclude) 
+  filter(household_tbl, !rightstransfer%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, rightstransfer) 
+  filter(household_tbl, !marinegroup%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, marinegroup) 
+  filter(household_tbl, !othergroup%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, othergroup) 
+  filter(household_tbl, !votedistrict%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, votedistrict) 
+  filter(household_tbl, !votenational%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, votenational)  
+
+print(paste0("Values out of range for variables with Yes/No choices for Household ID", yes_no_var_index_hh$householdid))
+print(yes_no_var_index_hh)
+```
+
+
+```{r}
+rights_manage_index <- 
+    filter(household_tbl, !rightsmanage%in%c(yes_no_codes, skipcodes)) %>%
+           select(householdid, rightsmanage)
+print(rights_manage_index)
+```
+
+* FS_CHOICES (`fsnotenough`, `fsdidnotlast`, `fsbalanceddiet`, `fslowcostfood`, `fsnomealchild`)
+
+```{r}
+fs_codes <- c(1:3)
+fs_var_index <- 
+  filter(household_tbl, !fsnotenough%in%c(fs_codes, skipcodes)) %>%
+           select(householdid, fsnotenough)
+  filter(household_tbl, !fsdidnotlast%in%c(fs_codes, skipcodes)) %>%
+           select(householdid, fsdidnotlast)
+  filter(household_tbl, !fsbalanceddiet%in%c(fs_codes, skipcodes)) %>%
+           select(householdid, fsbalanceddiet) 
+  filter(household_tbl, !fslowcostfood%in%c(fs_codes, skipcodes)) %>%
+           select(householdid, fslowcostfood)
+  filter(household_tbl, !fsnomealchild%in%c(fs_codes, skipcodes)) %>%
+           select(householdid, fsnomealchild)
+  
+print(paste0("Values out of range for variables with FS choices for Household ID", fs_var_index$householdid))
+print(fs_var_index)
+```
+    
+* FS_FREQ_CHOICES (`fsfreqadultskip`, `fsfreqchildskip`)
+
+```{r}
+fs_freq_codes <- c(1:3)
+fs_freq_var_index <- 
+  filter(household_tbl, !fsfreqadultskip%in%c(fs_freq_codes, skipcodes)) %>%
+           select(householdid, fsfreqadultskip)
+  filter(household_tbl, !fsfreqchildskip%in%c(fs_freq_codes, skipcodes)) %>%
+           select(householdid, fsfreqchildskip)
+  
+print(paste0("Values out of range for variables with FS_FREQ choices for Household ID", fs_freq_var_index$householdid))
+print(fs_freq_var_index)
+```
+
+* SOCIAL_CONFLICT_CHOICES (`socialconflict`)
+
+```{r}
+social_conflict_codes <- c(1:5)
+social_conflict_index <- 
+    filter(household_tbl, !socialconflict%in%c(social_conflict_codes, skipcodes)) %>%
+           select(householdid, socialconflict)
+print(paste0("Values out of range for social conflict for Household ID", social_conflict_index$householdid))
+print(social_conflict_index)
+```
+
+* ATT_SCALE_CHOICES (`placehappy`, `placefavourite`, `placemiss`, `placebest`, `placefishhere`, `placebemyself`)
+
+```{r}
+att_scale_codes <- c(1:5)
+att_scale_index <- 
+  filter(household_tbl, !placehappy%in%c(att_scale_codes, skipcodes)) %>%
+           select(householdid, placehappy)
+  filter(household_tbl, !placefavourite%in%c(att_scale_codes, skipcodes)) %>%
+           select(householdid, placefavourite)
+  filter(household_tbl, !placemiss%in%c(att_scale_codes, skipcodes)) %>%
+           select(householdid, placemiss) 
+  filter(household_tbl, !placebest%in%c(att_scale_codes, skipcodes)) %>%
+           select(householdid, placebest)
+  filter(household_tbl, !placefishhere%in%c(att_scale_codes, skipcodes)) %>%
+           select(householdid, placefishhere)
+  filter(household_tbl, !placebemyself%in%c(att_scale_codes, skipcodes)) %>%
+           select(householdid, placebemyself)
+  
+print(paste0("Values out of range for variables with ATT_SCALE choices for Household ID", att_scale_index$householdid))
+print(att_scale_index)
+```
+
+
+# export to a summary table
+
+```{r}
+error_dat <- join_all(list(religion_index, latdeg_index, londeg_index, latmin_index, latsec_index, lonmin_index, lonsec_index,  latfrac_index, lonfrac_index, lat_sphere_index, lon_sphere_index,
+  day_index, month_index, year_index,
+  econ_trend_index, cooking_fuel_index,
+  yes_no_var_index_hh,
+  rights_manage_index,
+  fs_var_index,
+  fs_freq_var_index,
+  social_conflict_index,
+  att_scale_index),
+  by='householdid', type='full')
+error_dat_reshaped <- melt(error_dat, na.rm = TRUE, id = "householdid")
+out_tab <- data.frame(cbind(error_dat_reshaped, error_msg='Value out of range'))
+
+write.xlsx(out_tab, "household_tbl_erroneous_entries.xlsx")
+```
+
+
+
+
+
+
+

@@ -1,3 +1,5 @@
+##############ALIGNING T4 and T7 data ############
+
 ## set current directory as working directory
 setwd(
   file.path(

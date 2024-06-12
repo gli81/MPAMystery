@@ -16,13 +16,59 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # source('Combining_T4_and_T7_new.R', local = T)
+## we are not sourcing, instead we load data from csv files
+
+setwd(
+  file.path(
+    "R:/ind-soc-impacts/MPASocial",
+    "MPAMystery-master/1_Data_wrangling",
+    "1_Social/2_Source_data"
+  )
+)
+
+pacman::p_load(
+  rio, dplyr, janitor
+)
+
+last.file <- function(dir.nam, nam){
+  import(
+    paste0(
+      dir.nam, last(sort(grep(nam, list.files(dir.nam), value=T, fixed=T)))
+    ),
+    guess_max=50000
+  )
+}
+
+
 ## load CSV
+WELLBEING <- last.file(
+  dir.nam="./",
+  nam="HH_Tbl_WELLBEING"
+)
+DEMOGRAPHIC <- last.file(
+  dir.nam="./",
+  nam="HH_Tbl_DEMOGRAPHIC"
+)
+ORGANIZATION <- last.file(
+  dir.nam="./",
+  nam="HH_Tbl_ORGANIZATION"
+)
+NMORGANIZATION <- last.file(
+  dir.nam="./",
+  nam="HH_Tbl_NMORGANIZATION"
+)
+
+SETTLEMENT <- last.file(
+  dir.nam='../../../x_Flat_data_files/Inputs/',
+  nam='tbl_settlement'
+)
+
 
 # -- 1.1 Clean & post-code WELLBEING to create HHData for analysis ----
 
 HHData <-   WELLBEING %>%
   dplyr::transmute(
-    HouseholdID = householdid, 
+    HouseholdID = new_household, 
     MPAID = mpa, 
     SettlementID = settlement, 
     InterviewYear = interviewyear,
@@ -68,7 +114,7 @@ HHData <-   WELLBEING %>%
      )
    # ifelse(fseatless==1,1, ifelse(fseatless==0,0,990))
    ),
-   HungryCoded = as.integerr(
+   HungryCoded = as.integer(
      case_when(
        fshungry == 1 ~ 1,
        fshungry == 0 ~ 0,
@@ -133,33 +179,33 @@ HHData <-   WELLBEING %>%
    ),
    
    # Assets and Economic Well-being
-   Bicycle = as.integer(ifelse(assetbicycle>989,NA,assetbicycle*9)),
-   Motorcycle = as.integer(ifelse(assetmotorcycle>989,NA,assetmotorcycle*10)),
-   BoatNoMotor = as.integer(ifelse(assetboatnomotor>989,NA,assetboatnomotor*6)),
-   BoatOutboard = as.integer(ifelse(assetboatoutboard>989,NA,assetboatoutboard*7)),
-   BoatInboard =  as.integer(ifelse(assetboatinboard>989,NA,assetboatinboard*8)),
-   TV = as.integer(ifelse(assettv>989,NA,assettv*2)),
-   Entertain = as.integer(ifelse(assetentertain>989,NA,assetentertain*1)),
-   Satellite = as.integer(ifelse(assetsatellite>989,NA,assetsatellite*3)),
-   Generator = as.integer(ifelse(assetgenerator>989,NA,assetgenerator*5)),
-   
+   Bicycle = as.integer(ifelse(assetbicycle>989,NA,assetbicycle)),
+   Motorcycle = as.integer(ifelse(assetmotorcycle>989,NA,assetmotorcycle)),
+   BoatNoMotor = as.integer(ifelse(assetboatnomotor>989,NA,assetboatnomotor)),
+   BoatOutboard = as.integer(ifelse(assetboatoutboard>989,NA,assetboatoutboard)),
+   BoatInboard =  as.integer(ifelse(assetboatinboard>989,NA,assetboatinboard)),
+   TV = as.integer(ifelse(assettv>989,NA,assettv)),
+   Entertain = as.integer(ifelse(assetentertain>989,NA,assetentertain)),
+   Satellite = as.integer(ifelse(assetsatellite>989,NA,assetsatellite)),
+   Generator = as.integer(ifelse(assetgenerator>989,NA,assetgenerator)),
+
    Car = as.integer(ifelse(assetcar>989,NA,assetcar)),
    Truck = as.integer(ifelse(assettruck>989,NA,assettruck)),
-   CarTruck = as.integer(ifelse(assetcartruck<993,assetcartruck*11,
-                                ifelse(assetcartruck==993,(Car+Truck)*11,NA))),
-   
+   CarTruck = as.integer(ifelse(assetcartruck<993,assetcartruck,
+                                ifelse(assetcartruck==993,(Car+Truck),NA))),
+
    LandlinePhone = as.integer(ifelse(assetlandlinephone>989,NA,assetlandlinephone)),
    CellPhone = as.integer(ifelse(assetcellphone>989,NA,assetcellphone)),
-   PhoneCombined = as.integer(ifelse(assetphonecombined<993,assetphonecombined*4,
-                                     ifelse(assetphonecombined==993,(LandlinePhone+CellPhone)*4,NA))),
-   
+   PhoneCombined = as.integer(ifelse(assetphonecombined<993,assetphonecombined,
+                                     ifelse(assetphonecombined==993,(LandlinePhone+CellPhone),NA))),
+
    Radio = as.integer(ifelse(assetradio>989,NA,assetradio)),
    Stereo = as.integer(ifelse(assetstereo>989,NA,assetstereo)),
    CD = as.integer(ifelse(assetcd>989,NA,assetcd)),
    DVD = as.integer(ifelse(assetdvd>989,NA,assetdvd)),
-   Entertain = as.integer(ifelse(assetentertain<993,assetentertain*1,
+   Entertain = as.integer(ifelse(assetentertain<993,assetentertain,
                                  ifelse(assetentertain==993,Radio+Stereo+CD+DVD,NA))),
-   
+   # Cooking Fuel
    CookingFuel = as.integer(ifelse(cookingfuel%in%c(1:6), cookingfuel, NA)),
    CookingFuel.Biomass = as.integer(ifelse(cookingfuel==1|cookingfuel==2,0,
                                            ifelse(cookingfuel==3|cookingfuel==4|cookingfuel==5|cookingfuel==6,1,NA))),
@@ -281,8 +327,8 @@ HHData <-   WELLBEING %>%
 
 IndDemos <- 
   DEMOGRAPHIC %>%
-  dplyr::transmute(DemographicID = demographicid,
-                   HouseholdID = household,
+  dplyr::transmute(DemographicID = new_demographicid,
+                   HouseholdID = new_household,
                    RelationHHH = as.integer(ifelse(relationhhh%in%c(0:13),relationhhh,NA)),
                    IndividualGender = ifelse(individualgender==2,0,ifelse(individualgender>989,NA,individualgender)),
                    IndividualAge = ifelse(individualage>150,NA,individualage),
@@ -304,7 +350,7 @@ IndDemos <-
 Organization <- 
   ORGANIZATION %>%
   dplyr::transmute(OrganizationID = morganizationid,
-                   HouseholdID = household,
+                   HouseholdID = new_household,
                    MarineGroupName = name,
                    MarinePosition = position,
                    MarineMeeting = ifelse(meeting%in%c(0:1),meeting, NA),
@@ -315,7 +361,7 @@ Organization <-
 NMOrganization <-
   NMORGANIZATION %>%
   dplyr::transmute(NMOrganizationID = nmorganizationid,
-                   HouseholdID = household,
+                   HouseholdID = new_household,
                    OtherGroupName = name,
                    OtherGroupPosition = position,
                    OtherGroupMeeting = ifelse(meeting%in%c(0:1),meeting, NA),
@@ -341,41 +387,83 @@ Settlements <-
 # ---- 1.5 Add monitoring year column to HHData for analysis ----
 
 
-HHData$MonitoringYear <- factor(mapply(a=HHData$MPAID,
-                                       b=HHData$InterviewYear,
-                                       function(a,b){
-                                         define <- 
-                                           HHData %>% 
-                                           group_by(MPAID) %>% 
-                                           summarise(Baseline=min(InterviewYear),
-                                                     TwoYear=Baseline+2,
-                                                     ThreeYear=Baseline+3,
-                                                     FourYear=Baseline+4,
-                                                     FiveYear=Baseline+5,
-                                                     SixYear=Baseline+6,
-                                                     SevenYear=Baseline+7,
-                                                     EightYear=Baseline+8,
-                                                     NineYear=Baseline+9,
-                                                     TenYear=Baseline+10)
-                                         
-                                         mon.year <- ifelse(b==define$Baseline[define$MPAID==a],"Baseline",
-                                                            ifelse(b==define$TwoYear[define$MPAID==a],"2 Year Post",
-                                                                   ifelse(b==define$ThreeYear[define$MPAID==a],"3 Year Post",
-                                                                          ifelse(b==define$FourYear[define$MPAID==a],"4 Year Post",
-                                                                                 ifelse(b==define$FiveYear[define$MPAID==a],"5 Year Post",
-                                                                                        ifelse(b==define$SixYear[define$MPAID==a],"6 Year Post",
-                                                                                               ifelse(b==define$SevenYear[define$MPAID==a],"7 Year Post",
-                                                                                                      ifelse(b==define$EightYear[define$MPAID==a],"8 Year Post",
-                                                                                                             ifelse(b==define$NineYear[define$MPAID==a],"9 Year Post",
-                                                                                                                    ifelse(b==define$TenYear[define$MPAID==a],"10 Year Post"))))))))))
-                                         mon.year
-                                       }),
-                                levels=c("Baseline", "2 Year Post", "3 Year Post", "4 Year Post", "5 Year Post", "6 Year Post",
-                                         "7 Year Post", "8 Year Post", "9 Year Post", "10 Year Post"),
-                                ordered=T)
+HHData$MonitoringYear <- factor(
+  mapply(
+    a=HHData$MPAID,
+    b=HHData$InterviewYear,
+    function(a,b){
+      define <- HHData %>% 
+        group_by(MPAID) %>% 
+        summarise(
+          Baseline=min(InterviewYear),
+          TwoYear=Baseline+2,
+          ThreeYear=Baseline+3,
+          FourYear=Baseline+4,
+          FiveYear=Baseline+5,
+          SixYear=Baseline+6,
+          SevenYear=Baseline+7,
+          EightYear=Baseline+8,
+          NineYear=Baseline+9,
+          TenYear=Baseline+10
+        )
+      mon.year <- ifelse(
+        b == define$Baseline[define$MPAID == a],
+        "Baseline",
+        ifelse(
+          b == define$TwoYear[define$MPAID == a],
+          "2 Year Post",
+          ifelse(
+            b == define$ThreeYear[define$MPAID == a],
+            "3 Year Post",
+            ifelse(
+              b == define$FourYear[define$MPAID == a],
+              "4 Year Post",
+              ifelse(
+                b == define$FiveYear[define$MPAID == a],
+                "5 Year Post",
+                ifelse(
+                  b == define$SixYear[define$MPAID == a],
+                  "6 Year Post",
+                  ifelse(
+                    b == define$SevenYear[define$MPAID == a],
+                    "7 Year Post",
+                    ifelse(
+                      b == define$EightYear[define$MPAID == a],
+                      "8 Year Post",
+                      ifelse(
+                        b == define$NineYear[define$MPAID == a],
+                        "9 Year Post",
+                        ifelse(
+                          b==define$TenYear[define$MPAID == a],
+                          "10 Year Post"
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+      mon.year
+   }
+  ),
+  levels=c(
+    "Baseline", "2 Year Post", "3 Year Post", "4 Year Post", "5 Year Post",
+    "6 Year Post", "7 Year Post", "8 Year Post", "9 Year Post", "10 Year Post"
+  ),
+  ordered=T
+)
 
 
 # ---- 1.6 Create MPA.name table to define formal MPA names, in English and Bahasa, for plotting and automated R wrapper ----
+
+dir_name <- "../../../x_Flat_data_files/Inputs/"
+MPA.LKP <- last.file(
+  dir.nam=dir_name,
+  nam="tbl_mpa"
+)
 
 MPA.name <- MPA.LKP %>% 
   transmute(
@@ -383,13 +471,36 @@ MPA.name <- MPA.LKP %>%
     MPAName=name,
     MPAName.nospace=gsub(" ","",MPAName), # this is used for the automated R wrapper, to create a filepath with the MPA name
     MPAName.final=gsub("MPA","",MPAName.nospace), # this is used to label the MPA without "MPA" in the name
-    MPAName.bahasa=ifelse(MPAID==15,"SAP Selat Pantar",
-                                  ifelse(MPAID==16,"SAP Flores Timur",
-                                         ifelse(MPAID==17, "KKP3K TPK Pulau Kei Kecil",
-                                                ifelse(MPAID==18, "KKP3K Pulau Koon", 
-                                                       ifelse(MPAID==19,"KKP3K TPK Kepulauan Tanimbar",
-                                                              ifelse(MPAID==20, "KKPD Sulawesi Tenggara",
-                                                                     ifelse(MPAID==21, "Taman Nasional Wakatobi", gsub("MPA","KKP",MPAName)))))))))
+    MPAName.bahasa=ifelse(
+      MPAID==15,
+      "SAP Selat Pantar",
+      ifelse(
+        MPAID==16,
+        "SAP Flores Timur",
+        ifelse(
+          MPAID==17,
+          "KKP3K TPK Pulau Kei Kecil",
+          ifelse(
+            MPAID==18,
+            "KKP3K Pulau Koon",
+            ifelse(
+              MPAID==19,
+              "KKP3K TPK Kepulauan Tanimbar",
+              ifelse(
+                MPAID==20,
+                "KKPD Sulawesi Tenggara",
+                ifelse(
+                  MPAID==21,
+                  "Taman Nasional Wakatobi",
+                  gsub("MPA","KKP",MPAName)
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
 
 
 # 

@@ -2,6 +2,8 @@ pacman::p_load(
   rio, dplyr, janitor, ggplot2
 )
 
+setwd("R:/ind-soc-impacts/MPASocial/MPAMystery-master/1_Data_wrangling/1_Social/2_Source_data/")
+
 last.file <- function(dir.nam, nam){
   import(
     paste0(
@@ -11,14 +13,19 @@ last.file <- function(dir.nam, nam){
   )
 }
 
-
+# dir_name
 DEMOGRAPHIC_ <- last.file(
   dir.nam="./",
   nam="HH_Tbl_DEMOGRAPHIC"
 )
 DEMOGRAPHIC_$yearID <- as.factor(DEMOGRAPHIC_$yearID)
 for (i in 1:ncol(DEMOGRAPHIC_)) {
-  filtered <- DEMOGRAPHIC_[(DEMOGRAPHIC_[, i] < 990 | DEMOGRAPHIC_[, i] > 999) & (!DEMOGRAPHIC_[, i] %in% as.character(990:999)), ]
+  filtered <- DEMOGRAPHIC_[
+    (DEMOGRAPHIC_[, i] < 990 | DEMOGRAPHIC_[, i] > 999) & 
+      (!DEMOGRAPHIC_[, i] %in% as.character(990:999)) &
+      (DEMOGRAPHIC_[, i] < 9980 | DEMOGRAPHIC_[, i] > 9999) & 
+      (!DEMOGRAPHIC_[, i] %in% as.character(9980:9999)),
+  ]
   p <- ggplot(filtered, aes_string(x = "yearID", y = colnames(filtered)[i])) +
     geom_boxplot() +
     labs(
@@ -41,7 +48,12 @@ ORGANIZATION_ <- last.file(
 )
 ORGANIZATION_$yearID <- as.factor(ORGANIZATION_$yearID)
 for (i in 1:ncol(ORGANIZATION_)) {
-  filtered <- ORGANIZATION_[(ORGANIZATION_[, i] < 990 | ORGANIZATION_[, i] > 999) & (!ORGANIZATION_[, i] %in% as.character(990:999)), ]
+  filtered <- ORGANIZATION_[
+    (ORGANIZATION_[, i] < 990 | ORGANIZATION_[, i] > 999) & 
+      (!ORGANIZATION_[, i] %in% as.character(990:999)) &
+      (ORGANIZATION_[, i] < 9980 | ORGANIZATION_[, i] > 9999) & 
+      (!ORGANIZATION_[, i] %in% as.character(9980:9999)),
+  ]
   p <- ggplot(filtered, aes_string(x = "yearID", y = colnames(filtered)[i])) +
     geom_boxplot() +
     labs(
@@ -62,7 +74,12 @@ NMORGANIZATION_ <- last.file(
 )
 NMORGANIZATION_$yearID <- as.factor(NMORGANIZATION_$yearID)
 for (i in 1:ncol(NMORGANIZATION_)) {
-  filtered <- NMORGANIZATION_[(NMORGANIZATION_[, i] < 990 | NMORGANIZATION_[, i] > 999) & (!NMORGANIZATION_[, i] %in% as.character(990:999)), ]
+  filtered <- NMORGANIZATION_[
+    (NMORGANIZATION_[, i] < 990 | NMORGANIZATION_[, i] > 999) & 
+      (!NMORGANIZATION_[, i] %in% as.character(990:999)) &
+      (NMORGANIZATION_[, i] < 9980 | NMORGANIZATION_[, i] > 9999) & 
+      (!NMORGANIZATION_[, i] %in% as.character(9980:9999)),
+  ]
   p <- ggplot(filtered, aes_string(x = "yearID", y = colnames(filtered)[i])) +
     geom_boxplot() +
     labs(
@@ -83,7 +100,12 @@ WELLBEING_ <- last.file(
 )
 WELLBEING_$yearID <- as.factor(WELLBEING_$yearID)
 for (i in 1:ncol(WELLBEING_)) {
-  filtered <- WELLBEING_[(WELLBEING_[, i] < 990 | WELLBEING_[, i] > 999) & (!WELLBEING_[, i] %in% as.character(990:999)), ]
+  filtered <- WELLBEING_[
+    (WELLBEING_[, i] < 990 | WELLBEING_[, i] > 999) & 
+      (!WELLBEING_[, i] %in% as.character(990:999)) &
+      (WELLBEING_[, i] < 9980 | WELLBEING_[, i] > 9999) & 
+      (!WELLBEING_[, i] %in% as.character(9980:9999)),
+  ]
   p <- ggplot(filtered, aes_string(x = "yearID", y = colnames(filtered)[i])) +
     geom_boxplot() +
     labs(

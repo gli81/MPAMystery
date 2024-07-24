@@ -43,7 +43,7 @@ setwd(
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-## define functions for clearning ethnicity variables
+## define functions for cleaning ethnicity variables
 # Function to remove all white space in string variables
 trim <- function(x) gsub("^\\s+|\\s+$","",x)
 
@@ -60,6 +60,7 @@ str_clean <- function(strings) {
 
 
 ## set output file names
+dir_ <- "../../../x_Flat_data_files/Inputs/combined/"
 pref <- "HH_Tbl_"
 suff <- paste0('_', today.date, ".csv")
 
@@ -82,41 +83,72 @@ WELLBEING <- WELLBEING %>%
 
 
 # ---- 2.1.2 Create new variable for WELLBEING ----
-## create new survey version variable
+
 WELLBEING <- WELLBEING %>%
   mutate(
+    ## create new survey version variable
     surveyversion_new = case_when(
       interviewyear <= 2010 ~ "v0.13",
       interviewyear >= 2011 & interviewyear <= 2013 ~ "v2.3",
       interviewyear >= 2014 & interviewyear <= 2019 ~ "v2.4",
       TRUE ~ NA_character_
     ),
+    ## create ethnicity cleaned
     paternalethnicity_clean = str_clean(paternalethnicity),
     maternalethnicity_clean = str_clean(maternalethnicity),
+    ## create seascape id
     seascape_id = ifelse(mpa >= 1 & mpa <= 6, "BHS", "SBS")
   )
-# WELLBEING$surveyversion_new
 
-
-# ---- 2.1.3 Write WELLBEING to csv ----
-write.csv(
-  WELLBEING %>% select(-c("Series", "base_year", "tmp_household")),
-  paste0(pref, "WELLBEING", suff),
-  row.names=FALSE
+## load ethnicity lookup table
+ethnicity.lkp <- last.file(
+  "../../../x_Flat_data_files/Inputs/",
+  "ethnicity_lkp"
 )
+ethnicity.lkp <- ethnicity.lkp %>%
+  group_by(std.eth.str) %>%
+  mutate(row_num = row_number()) %>%
+  ungroup()
+## create paternal ethnicity coded
+WELLBEING <- WELLBEING %>%
+  left_join(
+    ethnicity.lkp %>% filter(row_num == 1),
+    by=c("paternalethnicity_clean" = "std.eth.str")
+  ) %>%
+  rename(paternalethnicity_coded = eth.iso) %>%
+  select(-c("ethnic.id", "row_num"))
+## create maternal ethnicity coded
+WELLBEING <- WELLBEING %>%
+  left_join(
+    ethnicity.lkp %>% filter(row_num == 1),
+    by=c("maternalethnicity_clean" = "std.eth.str")
+  ) %>%
+  rename(maternalethnicity_coded = eth.iso) %>%
+  select(-c("ethnic.id", "row_num"))
 
+## load education level lookup table
+education.lkp <- last.file(
+  "../../../x_Flat_data_files/Inputs/",
+  "education_lkp"
+)
+education.lkp1 <- education.lkp %>% 
+  distinct(IndividualEducation,ed.level,.keep_all = T) %>%
+  filter(ed.level!="NA") %>%
+  filter(IndividualEducation!="NA") %>%#last line of code added to avoid duplicates in the left_join below
+  mutate(
+    individualeducation = IndividualEducation
+  )
 
-# WELLBEING$new_household
-# DEMOGRAPHIC$household
-# DEMOGRAPHIC$Series
-# WELLBEING$tmp_household
-
+## Will join the WELLBEING table and education lookup table after deal with DEMOGRAPHIC
+## because need DEMOGRAPHIC table to join
+## After that, will write the WELLBEING table to csv
 
 # ---- 2.2.1 Create new variable for DEMOGRAPHIC ----
-# DEMOGRAPHIC$relationhhh
-## create new_householdhead based on relationhhh representing whether household head
+## create new_householdhead based on relationhhh
+## representing whether household head
 DEMOGRAPHIC$new_householdhead <- ifelse(DEMOGRAPHIC$relationhhh==0, 0, 1)
-## record current columns in DEMOGRAPHIC
+
+## record current columns in DEMOGRAPHIC for later use after join
 demographic_cols <- colnames(DEMOGRAPHIC)
 
 
@@ -126,13 +158,9 @@ DEMOGRAPHIC$tmp_household <- paste0(
   '_',
   DEMOGRAPHIC$household
 )
-# DEMOGRAPHIC$tmp_household
-# demo_merged <- merge(DEMOGRAPHIC, WELLBEING, by="tmp_household", all.x=TRUE)
 demographic_merged <- left_join(
   DEMOGRAPHIC, WELLBEING, by="tmp_household", suffix=c("", "_drop")
 )
-# demographic_merged
-# demographic_merged$yearID
 
 
 # ---- 2.2.3 Create new variables for DEMOGRAPHIC ----
@@ -141,21 +169,42 @@ demographic_merged <- demographic_merged %>%
   mutate(
     new_demographicid=paste0(yearID, '_', as.character(demographicid))
   )
-# sum(is.na(demographic_merged$new_household))
 
 
 # ---- 2.2.4 Write DEMOGRAPHIC to csv file ----
 demographic_output <- demographic_merged %>%
-  select(all_of(demographic_cols), "new_household", "new_demographicid", "yearID")
+  select(
+    all_of(demographic_cols), "new_household", "new_demographicid", "yearID"
+  )
+
 ## write DEMOGRAPHIC to csv
 write.csv(
   demographic_output %>% select(-c("Series")),
-  paste0(pref, "DEMOGRAPHIC", suff),
+  paste0(dir_, pref, "DEMOGRAPHIC", suff),
+  row.names=FALSE
+)
+
+## ---- 2.3.1 Join WELLBEING table with education.lkp ---
+HH.ed <- demographic_output %>% 
+  filter(relationhhh==0) %>% 
+  dplyr::select(new_household,individualeducation) %>% 
+  left_join(education.lkp1, by=c("individualeducation")) %>%
+  dplyr::select(-IndividualEducation) # this data contain the education level of the heads of households
+
+WELLBEING <- WELLBEING %>% 
+  left_join(HH.ed,by=c("new_household"="new_household")) %>%
+  select(-c("individualeducation"))
+
+
+# ---- 2.3.2 Write WELLBEING to csv ----
+write.csv(
+  WELLBEING %>% select(-c("Series", "base_year", "tmp_household")),
+  paste0(dir_, pref, "WELLBEING", suff),
   row.names=FALSE
 )
 
 
-# ---- 2.3.1 Merge ORGANIZATION with WELLBEING ----
+# ---- 2.4.1 Merge ORGANIZATION with WELLBEING ----
 ## merge ORGANIZATION with WELLBEING for new_householdID
 organization_cols <- colnames(ORGANIZATION)
 ORGANIZATION$tmp_household <- paste0(
@@ -163,25 +212,23 @@ ORGANIZATION$tmp_household <- paste0(
   '_',
   ORGANIZATION$household
 )
-# ORGANIZATION$tmp_household
 organization_merged <- left_join(
   ORGANIZATION, WELLBEING, by="tmp_household", suffix=c("", "_drop")
 )
-# sum(is.na(organization_merged$new_household))
 
 
-# ---- 2.3.2 Write ORGANIZATION to csv ----
+# ---- 2.4.2 Write ORGANIZATION to csv ----
 organization_output <- organization_merged %>%
   select(all_of(organization_cols), "new_household", "yearID")
 ## write ORGANIZATION to csv
 write.csv(
   organization_output %>% select(-c("Series")),
-  paste0(pref, "ORGANIZATION", suff),
+  paste0(dir_, pref, "ORGANIZATION", suff),
   row.names=FALSE
 )
 
 
-# ---- 2.4.1 Merge NMORGANIZATION with WELLBEING ----
+# ---- 2.5.1 Merge NMORGANIZATION with WELLBEING ----
 ## merge NMORGANIZATION with WELLBEING for new_householdID
 nmorganization_cols <- colnames(NMORGANIZATION)
 NMORGANIZATION$tmp_household <- paste0(
@@ -189,19 +236,17 @@ NMORGANIZATION$tmp_household <- paste0(
   '_',
   NMORGANIZATION$household
 )
-NMORGANIZATION$tmp_household
 nmorganization_merged <- left_join(
   NMORGANIZATION, WELLBEING, by="tmp_household", suffix=c("", "_drop")
 )
-# sum(is.na(nmorganization_merged$new_household))
 
 
-# ---- 2.4.2 Write ORGANIZATION to csv ----
+# ---- 2.5.2 Write ORGANIZATION to csv ----
 nmorganization_output <- nmorganization_merged %>%
   select(all_of(nmorganization_cols), "new_household", "yearID")
 ## write NMORGANIZATION to csv
 write.csv(
   nmorganization_output %>% select(-c("Series")),
-  paste0(pref, "NMORGANIZATION", suff),
+  paste0(dir_, pref, "NMORGANIZATION", suff),
   row.names=FALSE
 )

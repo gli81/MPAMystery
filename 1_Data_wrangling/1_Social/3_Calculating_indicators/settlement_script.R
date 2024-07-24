@@ -19,4 +19,4 @@ SettData <-
    Age = mean(HHHAge, na.rm=T),
    Gender = mean(HHHGender, na.rm=T)
   )
-# write.csv(SettData, file="Settlement_Data.csv")
+write.csv(SettData, file="Settlement_Data.csv")

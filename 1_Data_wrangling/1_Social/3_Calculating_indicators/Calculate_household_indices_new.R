@@ -240,17 +240,19 @@ HHData <- arrange(HHData, HouseholdID)
 # ---- SECTION 3: EXPORT WELLBEING TABLE ALONG WITH INDICES ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+dir_ <- "../../../x_Flat_data_files/Inputs/combined/"
 today.date <- gsub("-","",Sys.Date())
 pref <- "HH_Tbl_"
 suff <- paste0('_', today.date, ".csv")
 merged_WELLBEING <- WELLBEING %>%
   left_join(
     HHData %>%
-      select(HouseholdID, MAIndex), by = c("new_household" = "HouseholdID")
+      select(HouseholdID, MAIndex, PAIndex, MTIndex, FSIndex, SERate),
+    by = c("new_household" = "HouseholdID")
   )
 ## Write the merged dataframe to a CSV file
 write.csv(
   merged_WELLBEING,
-  paste0("../2_Source_data/", pref,"WELLBEING", suff),
+  paste0(dir_, pref,"WELLBEING", suff),
   row.names = FALSE
 )

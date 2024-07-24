@@ -16,3 +16,5 @@ xx_Archive/*/x_Flat_data_files/*
 1_Data_wrangling/1_Social/2_Source_data/*.csv
 1_Data_wrangling/1_Social/2_Source_data/histograms
 1_Data_wrangling/1_Social/2_Source_data/boxplots
+1_Data_wrangling/1_Social/4_Data_cleaning/*.csv
+1_Data_wrangling/1_Social/3_Calculating_indicators/Settlement_Data.csv

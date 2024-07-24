@@ -38,23 +38,23 @@ last.file <- function(dir.nam, nam){
     guess_max=50000
   )
 }
-
+dir_ <- "../../../x_Flat_data_files/Inputs/combined/"
 
 ## load CSV
 WELLBEING <- last.file(
-  dir.nam="./",
+  dir.nam=dir_,
   nam="HH_Tbl_WELLBEING"
 )
 DEMOGRAPHIC <- last.file(
-  dir.nam="./",
+  dir.nam=dir_,
   nam="HH_Tbl_DEMOGRAPHIC"
 )
 ORGANIZATION <- last.file(
-  dir.nam="./",
+  dir.nam=dir_,
   nam="HH_Tbl_ORGANIZATION"
 )
 NMORGANIZATION <- last.file(
-  dir.nam="./",
+  dir.nam=dir_,
   nam="HH_Tbl_NMORGANIZATION"
 )
 
@@ -69,9 +69,9 @@ SETTLEMENT <- last.file(
 HHData <-   WELLBEING %>%
   dplyr::transmute(
     HouseholdID = new_household, 
-    MPAID = mpa, 
-    SettlementID = settlement, 
-    InterviewYear = interviewyear,
+    MPAID = as.numeric(mpa), 
+    SettlementID = as.numeric(settlement), 
+    InterviewYear = as.numeric(interviewyear),
                    
    # Food Security
    DidNotLastCoded = as.integer(
@@ -290,7 +290,9 @@ HHData <-   WELLBEING %>%
    PaternalEthnicity = paternalethnicity,
    
    #Fishing 
-   LessProductiveDaysFishing = as.integer(ifelse(lessproductivedaysfishing%in%c(0:366),lessproductivedaysfishing,NA)),
+   LessProductiveDaysFishing = as.integer(
+     ifelse(lessproductivedaysfishing%in%c(0:366),lessproductivedaysfishing,NA)
+   ),
    PoorCatch = poorcatch,
    PoorCatchUnits = poorcatchunits, 
    
@@ -311,16 +313,25 @@ HHData <-   WELLBEING %>%
                 RemovecFS = as.factor(ifelse(rowSums(.[c("ChildPortionCoded", "LowCostFoodCoded", "ChildSkipCoded", 
                                                          "FreqChildSkipCoded", "NoMealChildCoded")])>1979,"Yes","No"))) %>% #1980 would vbe 2 or more blind codes
   
-  dplyr::select(HouseholdID, MPAID, SettlementID, InterviewYear, DidNotLast, BalancedDiet, AdultSkip, EatLess, FreqAdultSkip, Hungry, RemoveFS,
-                CarTruck, Bicycle, Motorcycle,  BoatNoMotor, BoatOutboard, BoatInboard, PhoneCombined, TV, Entertain, Satellite, Generator, RemoveMA, CookingFuel, CookingFuel.Biomass,
-                PlaceHappy,  PlaceFavourite, PlaceMiss, PlaceBest, PlaceFishHere, PlaceBeMyself, RemovePA,
-                RightsAccess, RightsHarvest, RightsManage, RightsExclude, RightsTransfer, RemoveMT,
-                LowCostFood, ChildBalancedMeal, ChildNotEnough, ChildPortion, ChildHungry, ChildSkip, FreqChildSkip, NoMealChild, RemovecFS,
-                PrimaryLivelihood, SecondaryLivelihood, TertiaryLivelihood, FreqFish, FreqSaleFish, PercentIncFish, MajFishTechnique, FreqEatFish, PercentProteinFish, 
-                PrimaryFishTechnique, SecondaryFishTechnique, TertiaryFishTechnique, 
-                EconStatusTrend, EconStatusReason, Religion, YrResident, TimeMarket, SocialConflict,
-                MarineGroup, OtherGroup, VoteDistrict, VoteNational, NumLocalThreat, NumGlobalThreat, NumLocalAction, NumGlobalAction, 
-                LessProductiveDaysFishing, PoorCatch, PoorCatchUnits, MoreProductiveDaysFishing, GoodCatch, GoodCatchUnits, PaternalEthnicity)
+  dplyr::select(
+    HouseholdID, MPAID, SettlementID, InterviewYear, DidNotLast, BalancedDiet,
+    AdultSkip, EatLess, FreqAdultSkip, Hungry, RemoveFS, CarTruck, Bicycle,
+    Motorcycle,  BoatNoMotor, BoatOutboard, BoatInboard, PhoneCombined, TV,
+    Entertain, Satellite, Generator, RemoveMA, CookingFuel, CookingFuel.Biomass,
+    PlaceHappy,  PlaceFavourite, PlaceMiss, PlaceBest, PlaceFishHere,
+    PlaceBeMyself, RemovePA, RightsAccess, RightsHarvest, RightsManage,
+    RightsExclude, RightsTransfer, RemoveMT, LowCostFood, ChildBalancedMeal,
+    ChildNotEnough, ChildPortion, ChildHungry, ChildSkip, FreqChildSkip,
+    NoMealChild, RemovecFS, PrimaryLivelihood, SecondaryLivelihood,
+    TertiaryLivelihood, FreqFish, FreqSaleFish, PercentIncFish,
+    MajFishTechnique, FreqEatFish, PercentProteinFish, PrimaryFishTechnique,
+    SecondaryFishTechnique, TertiaryFishTechnique, EconStatusTrend,
+    EconStatusReason, Religion, YrResident, TimeMarket, SocialConflict,
+    MarineGroup, OtherGroup, VoteDistrict, VoteNational, NumLocalThreat,
+    NumGlobalThreat, NumLocalAction, NumGlobalAction, LessProductiveDaysFishing,
+    PoorCatch, PoorCatchUnits, MoreProductiveDaysFishing, GoodCatch,
+    GoodCatchUnits, PaternalEthnicity
+  )
 
 
 # ---- 1.2 Clean & post-code DEMOGRAPHIC to create IndDemos for analysis ----
@@ -639,6 +650,10 @@ NMOrganization <- NMOrganization %>%
 
 Settlements <- Settlements %>% 
   filter(MPAID%in%c(1:6))
+
+## output MPA look up table
+## abbreviation
+
 
 MPA.name <- MPA.name %>% 
   filter(MPAID%in%c(1:6))

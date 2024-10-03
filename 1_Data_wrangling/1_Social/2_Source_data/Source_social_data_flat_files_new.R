@@ -31,6 +31,7 @@ pacman::p_load(
 )
 
 last.file <- function(dir.nam, nam){
+  print(last(sort(grep(nam, list.files(dir.nam), value=T, fixed=T))))
   import(
     paste0(
       dir.nam, last(sort(grep(nam, list.files(dir.nam), value=T, fixed=T)))

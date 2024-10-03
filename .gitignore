@@ -21,3 +21,7 @@ xx_Archive/*/x_Flat_data_files/*
 1_Data_wrangling/1_Social/4_Data_cleaning/metadata_prep.txt
 
 ShinyApp/Settlement_Data_updated.csv
+
+1_Data_wrangling/1_Social/4_Data_cleaning/removeDUp.R
+1_Data_wrangling/1_Social/dupPK.R
+1_Data_wrangling/1_Social/PCA_Hotelling

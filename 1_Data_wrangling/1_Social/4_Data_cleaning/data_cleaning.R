@@ -9,11 +9,9 @@
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #
-# ---- SECTION 1: SUBSTITUTION IN WELLBEING ----
+# ---- SECTION 0: REMOVE DUPLICATES ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
 ## set current directory as working directory
 setwd(
   file.path(
@@ -28,6 +26,7 @@ pacman::p_load(
   rio, dplyr, janitor
 )
 last.file <- function(dir.nam, nam){
+  print(last(sort(grep(nam, list.files(dir.nam), value=T, fixed=T))))
   import(
     paste0(
       dir.nam, last(sort(grep(nam, list.files(dir.nam), value=T, fixed=T)))
@@ -35,6 +34,8 @@ last.file <- function(dir.nam, nam){
     guess_max=50000
   )
 }
+today.date <- gsub("-","",Sys.Date())
+
 dir_ <- "../../../x_Flat_data_files/Inputs/combined/"
 pref <- "HH_Tbl_"
 suff <- paste0('_', today.date, ".csv")
@@ -44,6 +45,46 @@ household_tbl <- last.file(
   dir.nam=dir_,
   nam="HH_Tbl_WELLBEING"
 )
+
+## load demographic data
+demo_tbl <- last.file(
+  dir.nam=dir_,
+  nam="HH_Tbl_DEMOGRAPHIC"
+)
+
+## load organization data
+org_tbl <- last.file(
+  dir.nam=dir_,
+  nam="HH_Tbl_ORGANIZATION"
+)
+
+nmorg_tbl <- last.file(
+  dir.nam=dir_,
+  nam="HH_Tbl_NMORGANIZATION"
+)
+
+## remove duplication in WELLBEING
+household_tbl <- household_tbl %>%
+  distinct()
+
+## remove duplication in DEMOGRAPHIC
+demo_tbl <- demo_tbl %>%
+  distinct()
+
+## remove duplication in ORGANIZATION
+org_tbl <- org_tbl %>%
+  distinct()
+
+## create new PK in NMORGANIZATION to ensure unique PK
+nmorg_tbl <- nmorg_tbl %>% mutate(
+  new_nmorganizationid = paste0('0', yearID, '_', nmorganizationid)
+)
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+# ---- SECTION 1: SUBSTITUTION IN WELLBEING ----
+#
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ## household valid range
 HH_VALID_RANGE <- list(
@@ -212,12 +253,6 @@ write.csv(
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-## load demographic data
-demo_tbl <- last.file(
-  dir.nam=dir_,
-  nam="HH_Tbl_DEMOGRAPHIC"
-)
-
 ## create dataframe for errors
 demo_err <- data.frame(
   row_number = integer(),
@@ -290,17 +325,6 @@ write.csv(
 # ---- SECTION 3: SUBSTITUTION IN MORGANIZATION AND NMORGANIZATION ----
 #
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-## load demographic data
-org_tbl <- last.file(
-  dir.nam=dir_,
-  nam="HH_Tbl_ORGANIZATION"
-)
-
-nmorg_tbl <- last.file(
-  dir.nam=dir_,
-  nam="HH_Tbl_NMORGANIZATION"
-)
 
 ## create dataframe for errors
 org_err <- data.frame(
